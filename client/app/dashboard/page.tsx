@@ -46,11 +46,14 @@ export default function Dashboard() {
     // Auth check (robust)
     const checkAuth = () => {
     const role = typeof window !== 'undefined' ? localStorage.getItem('role') : null
+    console.log('Dashboard - Retrieved role from localStorage:', role) // Debug log
     if (!role) {
         router.replace('/')
         return false
     }
-    setIsAdmin(role === 'admin')
+    const isAdminUser = role === 'admin'
+    console.log('Dashboard - Is admin?', isAdminUser) // Debug log
+    setIsAdmin(isAdminUser)
       return true
     }
     if (!checkAuth()) return

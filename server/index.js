@@ -288,12 +288,22 @@ fastify.post('/api/register', async (request, reply) => {
 // Login endpoint
 fastify.post('/api/login', async (request, reply) => {
   const { username, password } = request.body;
-  db.get('SELECT * FROM users WHERE username = ? AND password = ?', [username, password], (err, user) => {
-    if (user) {
-      return reply.send({ success: true, role: user.role, username: user.username });
-    } else {
+  
+  return new Promise((resolve, reject) => {
+    db.get('SELECT * FROM users WHERE username = ? AND password = ?', [username, password], (err, user) => {
+      if (err) {
+        reject(err);
+      } else if (user) {
+        resolve({ success: true, role: user.role, username: user.username });
+      } else {
+        reject(new Error('Invalid username or password'));
+      }
+    });
+  }).catch(error => {
+    if (error.message === 'Invalid username or password') {
       return reply.code(401).send({ error: 'Invalid username or password' });
     }
+    return reply.code(500).send({ error: 'Login failed' });
   });
 });
 

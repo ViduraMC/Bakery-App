@@ -16,11 +16,14 @@ export default function LoginPage() {
     setLoading(true)
     try {
       const res = await axios.post('http://localhost:3001/api/login', { username, password })
+      console.log('Login response:', res.data)
       localStorage.setItem('role', res.data.role)
       localStorage.setItem('username', res.data.username)
+      console.log('Stored role:', res.data.role)
       toast.success('Login successful!')
       router.push('/dashboard')
     } catch (err: any) {
+      console.error('Login error:', err)
       toast.error(err?.response?.data?.error || 'Invalid username or password')
     } finally {
       setLoading(false)
