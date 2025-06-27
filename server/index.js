@@ -43,6 +43,25 @@ db.serialize(() => {
     FOREIGN KEY (order_id) REFERENCES orders (id),
     FOREIGN KEY (product_id) REFERENCES products (id)
   )`);
+
+  // Add users table
+  db.run(`CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    username TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    role TEXT NOT NULL CHECK(role IN ('user', 'admin')),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
+  // Seed admin and sample user if not present
+  db.get('SELECT COUNT(*) as count FROM users', (err, row) => {
+    if (row.count === 0) {
+      const adminId = uuidv4();
+      const userId = uuidv4();
+      db.run('INSERT INTO users (id, username, password, role) VALUES (?, ?, ?, ?)', [adminId, 'admin', '12345', 'admin']);
+      db.run('INSERT INTO users (id, username, password, role) VALUES (?, ?, ?, ?)', [userId, 'user', '12345', 'user']);
+    }
+  });
 });
 
 // Register CORS
@@ -240,6 +259,41 @@ fastify.put('/api/orders/:id/status', async (request, reply) => {
         }
       }
     );
+  });
+});
+
+// Register endpoint
+fastify.post('/api/register', async (request, reply) => {
+  const { username, password } = request.body;
+  if (!username || !password) {
+    return reply.code(400).send({ error: 'Username and password required' });
+  }
+  if (username.toLowerCase() === 'admin') {
+    return reply.code(400).send({ error: 'Cannot register as admin' });
+  }
+  db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
+    if (user) {
+      return reply.code(400).send({ error: 'Username already exists' });
+    }
+    const id = uuidv4();
+    db.run('INSERT INTO users (id, username, password, role) VALUES (?, ?, ?, ?)', [id, username, password, 'user'], (err) => {
+      if (err) {
+        return reply.code(500).send({ error: 'Registration failed' });
+      }
+      return reply.send({ success: true });
+    });
+  });
+});
+
+// Login endpoint
+fastify.post('/api/login', async (request, reply) => {
+  const { username, password } = request.body;
+  db.get('SELECT * FROM users WHERE username = ? AND password = ?', [username, password], (err, user) => {
+    if (user) {
+      return reply.send({ success: true, role: user.role, username: user.username });
+    } else {
+      return reply.code(401).send({ error: 'Invalid username or password' });
+    }
   });
 });
 

@@ -45,12 +45,12 @@ export default function Dashboard() {
   useEffect(() => {
     // Auth check (robust)
     const checkAuth = () => {
-      const role = typeof window !== 'undefined' ? localStorage.getItem('role') : null
-      if (!role) {
+    const role = typeof window !== 'undefined' ? localStorage.getItem('role') : null
+    if (!role) {
         router.replace('/')
         return false
-      }
-      setIsAdmin(role === 'admin')
+    }
+    setIsAdmin(role === 'admin')
       return true
     }
     if (!checkAuth()) return
