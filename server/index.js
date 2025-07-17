@@ -271,17 +271,30 @@ fastify.post('/api/register', async (request, reply) => {
   if (username.toLowerCase() === 'admin') {
     return reply.code(400).send({ error: 'Cannot register as admin' });
   }
-  db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
-    if (user) {
-      return reply.code(400).send({ error: 'Username already exists' });
-    }
-    const id = uuidv4();
-    db.run('INSERT INTO users (id, username, password, role) VALUES (?, ?, ?, ?)', [id, username, password, 'user'], (err) => {
+  
+  return new Promise((resolve, reject) => {
+    db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
       if (err) {
-        return reply.code(500).send({ error: 'Registration failed' });
+        reject(err);
+      } else if (user) {
+        resolve({ success: false, error: 'Username already exists' });
+      } else {
+        const id = uuidv4();
+        db.run('INSERT INTO users (id, username, password, role) VALUES (?, ?, ?, ?)', [id, username, password, 'user'], (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve({ success: true });
+          }
+        });
       }
-      return reply.send({ success: true });
     });
+  }).then(result => {
+    if (result.success) {
+      return result;
+    } else {
+      return reply.code(400).send({ error: result.error });
+    }
   });
 });
 
@@ -296,14 +309,16 @@ fastify.post('/api/login', async (request, reply) => {
       } else if (user) {
         resolve({ success: true, role: user.role, username: user.username });
       } else {
-        reject(new Error('Invalid username or password'));
+        // Return 401 for invalid credentials instead of throwing error
+        resolve({ success: false, error: 'Invalid username or password' });
       }
     });
-  }).catch(error => {
-    if (error.message === 'Invalid username or password') {
-      return reply.code(401).send({ error: 'Invalid username or password' });
+  }).then(result => {
+    if (result.success) {
+      return result;
+    } else {
+      return reply.code(401).send({ error: result.error });
     }
-    return reply.code(500).send({ error: 'Login failed' });
   });
 });
 
