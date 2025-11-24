@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
-import axios from 'axios'
+import apiClient from '../../services/apiClient'
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('')
@@ -28,7 +28,7 @@ export default function RegisterPage() {
     }
     setLoading(true)
     try {
-      await axios.post('http://localhost:3001/api/register', { username, password })
+      await apiClient.post('/register', { username, password })
       toast.success('Registration successful! You can now login.')
       setTimeout(() => router.push('/login'), 1500)
     } catch (err: any) {
@@ -75,4 +75,4 @@ export default function RegisterPage() {
       </div>
     </div>
   )
-} 
+}
