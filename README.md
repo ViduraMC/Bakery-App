@@ -1,42 +1,349 @@
 # Sweet Delights Bakery App
 
-A comprehensive bakery management system with inventory tracking, order management, and payment processing.
+A comprehensive bakery management system built to demonstrate enterprise-grade software engineering principles, clean architecture, and industry-standard design patterns.
 
-## Features
+## 🎯 Project Overview
 
-### Customer Features
-- **Product Catalog**: Browse all available bakery products with images, descriptions, and prices
-- **Real-time Inventory**: See current stock levels for each product
-- **Shopping Cart**: Add items to cart and manage quantities
-- **Checkout System**: Place orders with customer information
-- **Order Tracking**: View order status and history
+This full-stack application showcases professional software development practices including:
+- **Clean Architecture** (Layered Architecture)
+- **Object-Oriented Programming (OOP)** principles
+- **Design Patterns** (6 patterns implemented)
+- **Optimized Data Structures** for performance
+- **Algorithm Implementation** for core functionality
 
-### Admin Features
-- **Product Management**: Add, edit, and delete products
-- **Inventory Control**: Update product quantities and prices
-- **Order Management**: View all orders and update their status
-- **Dashboard**: Overview of total products, orders, and revenue
-- **Real-time Updates**: Automatic inventory updates when orders are placed
+## 🏗️ Architecture
 
-## Tech Stack
+### Backend: Clean Architecture (Onion Architecture)
 
-### Frontend
-- **Next.js 14** - React framework with App Router
-- **React 18** - UI library
-- **Tailwind CSS** - Utility-first CSS framework
-- **TypeScript** - Type safety
-- **Axios** - HTTP client
-- **React Hot Toast** - Notifications
-- **Lucide React** - Icons
+The backend follows **Clean Architecture** principles with clear separation of concerns:
 
-### Backend
-- **Node.js** - Runtime environment
-- **Fastify** - Web framework
-- **SQLite** - Database
-- **UUID** - Unique identifiers
-- **CORS** - Cross-origin resource sharing
+```
+server/
+├── src/
+│   ├── domain/              # Core Business Logic (Independent Layer)
+│   │   ├── entities/        # Business entities with encapsulated logic
+│   │   └── repositories/    # Repository interfaces (abstractions)
+│   ├── application/         # Use Cases / Business Rules
+│   │   ├── services/        # Application services
+│   │   ├── strategies/      # Strategy Pattern implementations
+│   │   └── observers/       # Observer Pattern implementations
+│   ├── infrastructure/      # External Concerns (SQLite, Database)
+│   │   ├── database/        # Database connection (Singleton)
+│   │   └── repositories/    # Concrete repository implementations
+│   └── interfaces/          # External Interfaces (HTTP)
+│       └── http/
+│           ├── controllers/ # Request handlers
+│           └── routes/      # Route definitions
+└── index.js                 # Dependency Injection Container
+```
 
-## Installation
+**Why Clean Architecture?**
+- ✅ Business logic is independent of frameworks
+- ✅ Testable without UI, database, or external agencies
+- ✅ Database and framework can be swapped without affecting core logic
+- ✅ Clear dependency rule: outer layers depend on inner layers, never vice versa
+
+### Frontend: Service-Oriented Component Architecture
+
+```
+client/
+├── services/        # API abstraction layer
+│   ├── apiClient.ts
+│   ├── AuthService.ts
+│   ├── ProductService.ts
+│   └── OrderService.ts
+├── hooks/           # Custom React hooks (Business logic)
+│   ├── useAuth.ts
+│   ├── useProducts.ts
+│   └── useCart.ts
+└── app/             # UI Components (Presentation)
+```
+
+**Benefits:**
+- ✅ Separation of concerns (UI ← Logic ← Data)
+- ✅ Reusable business logic via custom hooks
+- ✅ Centralized API communication
+- ✅ Easy to test components and services independently
+
+## 🧩 Object-Oriented Programming (OOP)
+
+### 1. Encapsulation
+All business entities are implemented as classes with private data and public methods:
+
+```javascript
+class Product extends BaseEntity {
+  constructor({ id, name, price, quantity }) {
+    super(id);
+    this.name = name;
+    this.price = price;
+    this.quantity = quantity;
+  }
+
+  updateStock(amount) {
+    if (this.quantity + amount < 0) {
+      throw new Error('Insufficient stock');
+    }
+    this.quantity += amount;
+  }
+
+  isInStock() {
+    return this.quantity > 0;
+  }
+}
+```
+
+**Benefit**: Internal state is protected, and invariants (e.g., stock can't be negative) are enforced.
+
+### 2. Abstraction
+Interfaces (abstract classes) define contracts without implementation:
+
+```javascript
+class IProductRepository {
+  async findAll() { throw new Error('Not implemented'); }
+  async create(product) { throw new Error('Not implemented'); }
+  // ... other methods
+}
+```
+
+**Benefit**: Core logic depends on abstractions, not concrete implementations. Database can be swapped without changing services.
+
+### 3. Inheritance
+Base classes provide shared functionality:
+
+```javascript
+class BaseEntity {
+  constructor(id) {
+    this.id = id || uuidv4();
+    this.createdAt = new Date();
+    this.updatedAt = new Date();
+  }
+}
+
+class Product extends BaseEntity { /* inherits id, createdAt, updatedAt */ }
+class Order extends BaseEntity { /* inherits id, createdAt, updatedAt */ }
+```
+
+### 4. Polymorphism
+Multiple implementations of the same interface:
+
+```javascript
+// Payment strategies - all implement IPaymentStrategy
+cashStrategy.processPayment(100);      // Processes as cash
+creditCardStrategy.processPayment(100); // Processes as credit card
+```
+
+**Benefit**: Payment method can be swapped at runtime without changing OrderService.
+
+## 🎨 Design Patterns
+
+### 1. **Singleton Pattern**
+**Where**: `DatabaseConnection.js`
+
+```javascript
+class DatabaseConnection {
+  constructor() {
+    if (DatabaseConnection.instance) {
+      return DatabaseConnection.instance;
+    }
+    this.db = new sqlite3.Database('./bakery.db');
+    DatabaseConnection.instance = this;
+  }
+}
+module.exports = new DatabaseConnection();
+```
+
+**Why**: Ensures only one database connection exists throughout the application lifecycle.
+
+### 2. **Repository Pattern**
+**Where**: All data access logic
+
+```javascript
+// Interface
+class IProductRepository {
+  async findAll() { }
+  async create(product) { }
+}
+
+// Concrete implementation
+class SQLiteProductRepository extends IProductRepository {
+  async findAll() {
+    // SQLite-specific logic
+  }
+}
+```
+
+**Why**: Abstracts data access, making the application database-agnostic.
+
+### 3. **Dependency Injection (DI)**
+**Where**: `server/index.js`
+
+```javascript
+const userRepository = new SQLiteUserRepository();
+const authService = new AuthService(userRepository);
+const authController = new AuthController(authService);
+```
+
+**Why**: Promotes loose coupling, easier testing, and flexibility.
+
+### 4. **Strategy Pattern**
+**Where**: Payment processing
+
+```javascript
+class OrderService {
+  constructor(orderRepo, productRepo, paymentStrategy) {
+    this.paymentStrategy = paymentStrategy;
+  }
+
+  async createOrder(orderData, paymentDetails) {
+    // Process payment using injected strategy
+    await this.paymentStrategy.processPayment(total, paymentDetails);
+  }
+}
+```
+
+**Why**: Allows runtime selection of payment methods (Cash, CreditCard, PayPal, etc.) without modifying OrderService.
+
+### 5. **Observer Pattern**
+**Where**: Order event system
+
+```javascript
+class OrderService extends Observable {
+  async createOrder(orderData) {
+    const order = await this.orderRepository.create(order);
+    
+    // Notify all observers
+    this.notify('ORDER_CREATED', { orderId: order.id });
+    
+    return order;
+  }
+}
+
+// Observers automatically react
+inventoryObserver.update('ORDER_CREATED', data); // Updates inventory
+notificationObserver.update('ORDER_CREATED', data); // Sends email
+```
+
+**Why**: Decouples order creation from side effects. New observers can be added without modifying OrderService.
+
+### 6. **Layered Architecture Pattern**
+**Where**: Entire backend structure
+
+**Why**: Clear separation of concerns, each layer has a specific responsibility.
+
+## 📊 Data Structures
+
+### 1. **HashMap (JavaScript Map)**
+**Where**: Shopping cart in `useCart` hook
+
+```typescript
+const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
+
+const addToCart = (product: Product) => {
+  const item = cart.get(product.id); // O(1) lookup
+  if (item) {
+    cart.set(product.id, { ...item, quantity: item.quantity + 1 });
+  }
+};
+```
+
+**Complexity**: O(1) for lookups, inserts, and deletions
+
+**Why**: Efficient product lookups in the cart by ID. Much faster than array search (O(n)).
+
+### 2. **Arrays**
+**Where**: Product lists, order items
+
+```javascript
+const products = await productRepository.findAll();
+const total = order.items.reduce((sum, item) => sum + item.getTotal(), 0);
+```
+
+**Complexity**: O(n) for iteration, O(1) for push/pop
+
+### 3. **Observer List**
+**Where**: Observable pattern
+
+```javascript
+class Observable {
+  constructor() {
+    this.observers = []; // Array of observers
+  }
+
+  notify(event, data) {
+    this.observers.forEach(observer => observer.update(event, data));
+  }
+}
+```
+
+## 🔢 Algorithms
+
+### 1. **Aggregation / Reduction**
+**Where**: Order total calculation
+
+```javascript
+calculateTotal() {
+  return this.items.reduce((sum, item) => sum + item.getTotal(), 0);
+}
+```
+
+**Complexity**: O(n) where n = number of items
+
+### 2. **Linear Search**
+**Where**: Product filtering, validation
+
+```javascript
+const product = products.find(p => p.id === searchId);
+```
+
+**Complexity**: O(n)
+
+**Future Optimization**: Could implement binary search O(log n) if products are sorted, or use HashMap O(1).
+
+### 3. **Stock Validation (Transaction)**
+**Where**: Order creation with inventory check
+
+```javascript
+for (const item of orderData.items) {
+  const product = await productRepository.findById(item.product_id);
+  if (product.quantity < item.quantity) {
+    throw new Error('Insufficient stock');
+  }
+}
+```
+
+**Complexity**: O(n × m) where n = items in order, m = database lookup time
+
+## 🛠️ Tech Stack
+
+### Backend (JavaScript)
+- **Language**: **JavaScript (Node.js)** - All backend files are `.js`
+- **Framework**: Fastify (fast HTTP server)
+- **Database**: SQLite (with Repository pattern for easy swapping)
+- **Architecture**: Clean Architecture / Layered Architecture
+- **Why JavaScript?**: Node.js backend with strong OOP structure doesn't require TypeScript's type system
+
+### Frontend (TypeScript)
+- **Language**: **TypeScript** - All frontend files are `.ts` and `.tsx`
+- **Framework**: Next.js 14 (React 18)
+- **Styling**: Tailwind CSS
+- **State Management**: React Hooks + Custom Hooks
+- **HTTP Client**: Axios (abstracted via Service Layer)
+- **Why TypeScript?**: Type safety for React props, state, and API responses enhances code quality
+
+### Language Split Summary
+```
+Backend:  100% JavaScript (.js files in server/src/)
+Frontend: 100% TypeScript (.ts/.tsx files in client/)
+```
+
+**For Learners**: The TypeScript used is beginner-friendly, covering essentials like:
+- Type annotations (`: string`, `: number`)
+- Interfaces for object shapes (`interface Product { ... }`)
+- Generic types for hooks (`useState<string>`)
+
+See `client/services/` and `client/hooks/` for practical TypeScript examples.
+
+## 📦 Installation & Setup
 
 1. **Clone the repository**
    ```bash
@@ -49,142 +356,66 @@ A comprehensive bakery management system with inventory tracking, order manageme
    npm run install-all
    ```
 
-3. **Start the development servers**
+3. **Seed the database**
+   ```bash
+   cd server
+   node seed.js
+   ```
+
+4. **Start the development servers**
    ```bash
    npm run dev
    ```
 
-This will start both the backend server (port 3001) and frontend development server (port 3000).
+   - Backend: `http://localhost:3001`
+   - Frontend: `http://localhost:3000`
 
-## Project Structure
+## 🔐 Demo Credentials
 
-```
-Bakery-App/
-├── client/                 # Frontend Next.js application
-│   ├── app/               # Next.js app directory
-│   │   ├── globals.css    # Global styles
-│   │   ├── layout.tsx     # Root layout
-│   │   └── page.tsx       # Main page component
-│   ├── package.json       # Frontend dependencies
-│   ├── next.config.js     # Next.js configuration
-│   ├── tailwind.config.js # Tailwind CSS configuration
-│   └── postcss.config.js  # PostCSS configuration
-├── server/                # Backend Node.js application
-│   ├── index.js          # Main server file
-│   └── package.json      # Backend dependencies
-├── package.json          # Root package.json
-└── README.md            # This file
-```
+- **Admin**: username: `admin`, password: `12345`
+- **User**: username: `user`, password: `12345`
 
-## API Endpoints
+## 📁 Key Files
 
-### Products
-- `GET /api/products` - Get all products
-- `GET /api/products/:id` - Get single product
-- `POST /api/products` - Add new product
-- `PUT /api/products/:id` - Update product
-- `DELETE /api/products/:id` - Delete product
+### Backend Architecture (JavaScript)
+- **Domain Entities**: `server/src/domain/entities/`
+- **Repository Interfaces**: `server/src/domain/repositories/`
+- **Services**: `server/src/application/services/`
+- **Strategies**: `server/src/application/strategies/`
+- **Observers**: `server/src/application/observers/`
+- **DI Container**: `server/index.js`
 
-### Orders
-- `GET /api/orders` - Get all orders
-- `POST /api/orders` - Create new order
-- `PUT /api/orders/:id/status` - Update order status
+### Frontend Architecture (TypeScript)
+- **Services**: `client/services/` (`.ts` files)
+- **Hooks**: `client/hooks/` (`.ts` files)
+- **Components**: `client/app/` (`.tsx` files)
 
-## Database Schema
+## 🎓 Learning Outcomes
 
-### Products Table
-- `id` (TEXT, PRIMARY KEY)
-- `name` (TEXT, NOT NULL)
-- `description` (TEXT)
-- `price` (REAL, NOT NULL)
-- `quantity` (INTEGER, NOT NULL)
-- `category` (TEXT)
-- `image_url` (TEXT)
-- `created_at` (DATETIME)
-- `updated_at` (DATETIME)
+This project demonstrates:
 
-### Orders Table
-- `id` (TEXT, PRIMARY KEY)
-- `customer_name` (TEXT)
-- `customer_email` (TEXT)
-- `total_amount` (REAL, NOT NULL)
-- `status` (TEXT, DEFAULT 'pending')
-- `payment_intent_id` (TEXT)
-- `created_at` (DATETIME)
+1. **Enterprise-grade architecture** suitable for scaling
+2. **SOLID principles** in practice
+3. **Clean Code** with clear separation of concerns
+4. **Testability** through dependency injection and abstractions
+5. **Maintainability** through design patterns
+6. **Performance** through optimized data structures
+7. **Modern tooling** (TypeScript for frontend, JavaScript for backend)
 
-### Order Items Table
-- `id` (TEXT, PRIMARY KEY)
-- `order_id` (TEXT, FOREIGN KEY)
-- `product_id` (TEXT, FOREIGN KEY)
-- `quantity` (INTEGER, NOT NULL)
-- `price` (REAL, NOT NULL)
+## 🚀 Future Enhancements
 
-## Usage
+- [ ] Implement Factory Pattern for entity creation
+- [ ] Add Command Pattern for undo/redo functionality
+- [ ] Implement caching with Decorator Pattern
+- [ ] Add authentication middleware (Chain of Responsibility)
+- [ ] Implement GraphQL API alongside REST
+- [ ] Add comprehensive unit tests (Jest for backend, React Testing Library for frontend)
+- [ ] Implement CI/CD pipeline
 
-### For Customers
-1. Browse the product catalog on the main page
-2. Click "Add to Cart" for desired items
-3. Click the cart icon to view your cart
-4. Fill in customer information and place order
-5. View order status in the admin panel (if you have access)
+## 📝 License
 
-### For Admins
-1. Click "Admin Mode" to switch to admin interface
-2. Use the dashboard to view statistics
-3. Add new products using the "Add Product" button
-4. Edit existing products by clicking the edit icon
-5. Delete products using the delete icon
-6. Manage orders by updating their status
-7. Monitor inventory levels and revenue
+MIT License
 
-## Features in Detail
+---
 
-### Inventory Management
-- Automatic quantity updates when orders are placed
-- Real-time stock level display
-- Out-of-stock indicators
-- Bulk product management
-
-### Order Processing
-- Complete order workflow from cart to completion
-- Customer information collection
-- Order status tracking
-- Transaction management
-
-### User Interface
-- Responsive design for all devices
-- Modern, clean interface
-- Intuitive navigation
-- Real-time updates
-
-## Development
-
-### Running in Development Mode
-```bash
-npm run dev
-```
-
-### Building for Production
-```bash
-npm run build
-npm start
-```
-
-### Database
-The application uses SQLite for simplicity. The database file (`bakery.db`) will be created automatically when the server starts.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## License
-
-MIT License - see LICENSE file for details
-
-## Support
-
-For support and questions, please open an issue in the repository. 
+**Built with ❤️ to showcase Software Engineering Excellence**
