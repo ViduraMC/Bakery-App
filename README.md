@@ -2,6 +2,8 @@
 
 A comprehensive bakery management system built to demonstrate enterprise-grade software engineering principles, clean architecture, and industry-standard design patterns.
 
+Demo Link--> https://vercel.com/viduras-projects-9f01f4b4/bakery-app
+
 ## 🎯 Project Overview
 
 This full-stack application showcases professional software development practices including:
