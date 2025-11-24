@@ -401,12 +401,3 @@ This project demonstrates:
 5. **Maintainability** through design patterns
 6. **Performance** through optimized data structures
 7. **Modern tooling** (TypeScript for frontend, JavaScript for backend)
-
-
-## 📝 License
-
-MIT License
-
----
-
-**Built with ❤️ to showcase Software Engineering Excellence**
